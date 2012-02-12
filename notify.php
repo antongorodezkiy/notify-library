@@ -31,7 +31,7 @@ class Notify
 	private $notify, $returnTo, $ci_session, $additionalData;
 	
 	private $css = "
-	<style>
+	
 		/** Notification **/
 		.notify
 		{
@@ -158,13 +158,13 @@ class Notify
 		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
 		  color:#FFF;
 		}
-	</style>
+	
 	";
 	
 	
 	
 	private $js = '
-		<script type="text/javascript">
+		
 			function notify(json)
 			{
 				var now = new Date();
@@ -172,13 +172,13 @@ class Notify
 				for (key in json)
 				{
 					if ( key != "data" && key != "comeback" )
-						jQuery(".notify").prepend("<div time=\""+now+"\" class=\"notice "+json[key].type+"\"><p>"+json[key].message+"</p></div>");
+						$(".notify").prepend("<div time=\""+now+"\" class=\"notice "+json[key].type+"\"><p>"+json[key].message+"</p></div>");
 						
 					if ( key == "comeback" && json["comeback"] != null && json["comeback"] != "" )
 						window.location = json["comeback"];
 				}
 					
-				jQuery(".notice",".notify").click(function(){ jQuery(this).fadeOut(300); });
+				$(".notice",".notify").click(function(){ $(this).fadeOut(300); });
 			}
 			
 			function notifyError(message)
@@ -206,35 +206,35 @@ class Notify
 			
 				var now = new Date();
 				now = now.getTime();
-				jQuery(".notify").children().each(function()
+				$(".notify").children().each(function()
 				{
-					var notice_time = jQuery(this).attr("time");
+					var notice_time = $(this).attr("time");
 					
 					if ( (now-notice_time) > 2500 )
-						jQuery(this).fadeOut(800);
+						$(this).fadeOut(800);
 					else
-						jQuery(this).attr("time",now);
+						$(this).attr("time",now);
 				});
 			}
 			
 			
 			
-			jQuery(document).ready(function()
+			$(document).ready(function()
 			{
-				jQuery(".notice",".notify").live("click",function(){ jQuery(this).fadeOut(300); });
+				$(".notice",".notify").live("click",function(){ $(this).fadeOut(300); });
 				
 				setInterval("close_old_notifies()",2500);
 				
-				jQuery(".notice",".notify").hover(function()
+				$(".notice",".notify").hover(function()
 				{
-					jQuery(this).css("opacity","1");
+					$(this).css("opacity","1");
 				},
 				function()
 				{
-					jQuery(this).css("opacity","0.5");
+					$(this).css("opacity","0.5");
 				});
 			});
-		</script>
+	
 	';
 	
 	
@@ -272,13 +272,40 @@ class Notify
 	public function initJsCss()
 	{
 		$html = '<!--Notify-->';
-		$html .= $this->css;
-		$html .= $this->js;
+		$html .= '<style>'.$this->css.'</style>';
+		$html .= '<script type="text/javascript">'.$this->js.'</script>';
 		$html .= '<!--Notify-->';
 	  
 		return $html;
 	}
 	
+		public function initJs($in_html = false)
+		{
+			$html = '';
+			if ($in_html)
+				$html .= '<!--Notify--><script type="text/javascript">';
+			$html .= '/* Notify */';
+			$html .= $this->js;
+			$html .= '/* Notify */';
+			if ($in_html)
+				$html .= '</script><!--Notify-->';
+		  
+			return $html;
+		}
+		
+		public function initCss($in_html = false)
+		{
+			$html = '';
+			if ($in_html)
+				$html .= '<!--Notify--><style>';
+			$html .= '/* Notify */';
+			$html .= $this->css;
+			$html .= '/* Notify */';
+			if ($in_html)
+				$html .= '</style><!--Notify-->';
+		  
+			return $html;
+		}
 	
 	/**
 	* Основная функция возврата
@@ -466,32 +493,34 @@ class Notify
 		$html = '';
 		if (isset($notifies) && is_array($notifies) && count($notifies))
 		{
-			foreach($notifies as $n)
+			foreach($notifies as $field => $n)
 			{
 				if (is_array($n) && !isset($n['type']))
 				{
-					foreach($n as $nn)
+					foreach($n as $key => $nn)
 					{
-					  $html .= '
-					  <div time="'.(time()*1000).'" class="notice '.$nn['type'].'">
-						<p>
-							'.$nn['message'].'
-						</p>
-					  </div>';
+						if (isset($nn['message']) && $nn['message'])
+							$html .= '
+							<div time="'.(time()*1000).'" class="notice '.$nn['type'].'">
+							  <p>
+								  '.$nn['message'].'
+							  </p>
+							</div>';
 					}
 				}
 				else
 				{
-					$html .= '
-					<div time="'.(time()*1000).'" class="notice '.$n['type'].'">
-					  <p>
-						  '.$n['message'].'
-					  </p>
-					</div>';
+					if (isset($n['message']) && $n['message'])
+						$html .= '
+						<div time="'.(time()*1000).'" class="notice '.$n['type'].'">
+							<p>
+								'.$n['message'].'
+							</p>
+						</div>';
 				}
 			}
 		}
-		
+
 		$this->ci_session->unset_userdata('notify');
 		
 		return '<div class="notify">'.$html.'</div>';
