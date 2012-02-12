@@ -171,8 +171,11 @@ class Notify
 				now = now.getTime();
 				for (key in json)
 				{
-					if ( key != "data" )
+					if ( key != "data" && key != "comeback" )
 						jQuery(".notify").prepend("<div time=\""+now+"\" class=\"notice "+json[key].type+"\"><p>"+json[key].message+"</p></div>");
+						
+					if ( key == "comeback" )
+						window.location = json["comeback"];
 				}
 					
 				jQuery(".notice",".notify").click(function(){ jQuery(this).fadeOut(300); });
@@ -253,11 +256,7 @@ class Notify
 			$this->isPosted = true;
 		else
 			$this->isPosted = true;
-		
-		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
-			define('AJAXED',true);
-		else
-			define('AJAXED',false);
+
 	}
 	
 	
@@ -296,12 +295,27 @@ class Notify
 	*/
 	public function returnNotify($json='')
 	{
+		if ($this->returnTo == '')
+		{
+			$this->returnTo = $_SERVER['HTTP_REFERER'];
+		}
+		else
+		{
+			if ($this->returnTo == '/')
+				$this->returnTo = base_url();
+			elseif(strstr($this->returnTo,'http://'))
+				$this->returnTo = $this->returnTo;
+			else
+				$this->returnTo = site_url($this->returnTo);
+		}
 		
 		if ($json=='')
 			$json = $this->notify;
 		
+		$json['data'] = $this->additionalData;
+		$json['comeback'] = $this->returnTo;
 		
-		if (AJAXED)
+		if ($this->_ci->input->is_ajax_request())
 		{
 			$json = json_encode($json);
 			die($json);
@@ -310,20 +324,6 @@ class Notify
 		{
 			$this->ci_session->add_userdata('notify',$json);
 
-			if ($this->returnTo == '')
-			{
-				$this->returnTo = $_SERVER['HTTP_REFERER'];
-			}
-			else
-			{
-				if ($this->returnTo == '/')
-					$this->returnTo = base_url();
-				elseif(strstr($this->returnTo,'http://'))
-					$this->returnTo = $this->returnTo;
-				else
-					$this->returnTo = site_url($this->returnTo);
-			}
-			
 			redirect($this->returnTo);
 			
 			$this->returnTo = '';
@@ -394,6 +394,35 @@ class Notify
 	public function setData($data)
 	{
 		$this->additionalData = $data;
+	}
+	
+	/**
+	* Получение данных из ответа
+	*
+	* @global string $this->additionalData - данные
+	* @global string $this->ci_session - сессия
+	* @access public
+	*/
+	public function getData()
+	{
+		// уведомления текущего запроса
+		if (isset($this->additionalData))
+			$additionalData = $this->additionalData;
+		else
+		{
+			$sess = $this->ci_session->userdata('notify');
+			
+			if (isset($sess['data']) && $sess['data'])
+			{
+				$additionalData = $sess['data'];
+			}
+			else
+				$additionalData = '';
+		}
+			
+		// уведомления предыдущего запроса
+		
+		return $additionalData;
 	}
 	
 	/**
