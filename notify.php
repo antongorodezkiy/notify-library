@@ -174,7 +174,7 @@ class Notify
 					if ( key != "data" && key != "comeback" )
 						jQuery(".notify").prepend("<div time=\""+now+"\" class=\"notice "+json[key].type+"\"><p>"+json[key].message+"</p></div>");
 						
-					if ( key == "comeback" )
+					if ( key == "comeback" && json["comeback"] != null && json["comeback"] != "" )
 						window.location = json["comeback"];
 				}
 					
@@ -210,7 +210,7 @@ class Notify
 				{
 					var notice_time = jQuery(this).attr("time");
 					
-					if ( (now-notice_time) > 1500 )
+					if ( (now-notice_time) > 2500 )
 						jQuery(this).fadeOut(800);
 					else
 						jQuery(this).attr("time",now);
@@ -223,7 +223,7 @@ class Notify
 			{
 				jQuery(".notice",".notify").live("click",function(){ jQuery(this).fadeOut(300); });
 				
-				setInterval("close_old_notifies()",1500);
+				setInterval("close_old_notifies()",2500);
 				
 				jQuery(".notice",".notify").hover(function()
 				{
@@ -255,7 +255,7 @@ class Notify
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 			$this->isPosted = true;
 		else
-			$this->isPosted = true;
+			$this->isPosted = false;
 
 	}
 	
@@ -295,11 +295,7 @@ class Notify
 	*/
 	public function returnNotify($json='')
 	{
-		if ($this->returnTo == '')
-		{
-			$this->returnTo = $_SERVER['HTTP_REFERER'];
-		}
-		else
+		if ($this->returnTo != '')
 		{
 			if ($this->returnTo == '/')
 				$this->returnTo = base_url();
@@ -322,6 +318,13 @@ class Notify
 		}
 		else
 		{
+			if ($this->returnTo == '' && isset($_SERVER['HTTP_REFERER']))
+			{
+				$this->returnTo = $_SERVER['HTTP_REFERER'];
+			}
+			else
+				$this->returnTo = base_url();
+
 			$this->ci_session->add_userdata('notify',$json);
 
 			redirect($this->returnTo);
