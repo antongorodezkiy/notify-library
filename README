@@ -15,53 +15,54 @@ Codeigniter-notify-library
 	</body>
 </html>
 
-Пример базового использования в php (controller):
+Некоторые методы:
+	// добавление ошибки в очередь
+		$this->notify->error('Случилась какая-то ошибка'); // php
+		notifyError('Случилась еще одна ошибка'); // js
+	
+	// добавление успешного сообщения в очередь
+		$this->notify->success('Но основную часть мы выполнили'); // php
+		notifySuccess('И это действие тоже успешно'); // js
+	
+	// присоединим данные к ответу
+	// из javascript он будет доступен через объект data в ответе
+		$this->notify->setData( json_encode(array('item' => 'value')) );
+	
+	// в случае синхронного запроса, на этот адрес произойдет редирект из php,
+	// в случае асинхронного будет сменен window.location
+		$this->notify->setComeback( site_url() );
+	
+	// этот метод завершит дальнейшее выполнение скрипта
+		$this->notify->returnNotify();
 
+	
+
+Пример использования в php:
 	function some_action()
 	{
-		// добавление ошибки в очередь
-			$this->notify->error('Случилась какая-то ошибка'); // php
-			notifyError('Случилась еще одна ошибка'); // js
-		
-		// добавление успешного сообщения в очередь
-			$this->notify->success('Но основную часть мы выполнили'); // php
-			notifySuccess('И это действие тоже успешно'); // js
-		
-		// присоединим данные к ответу
-		// из javascript он будет доступен через объект data в ответе
-			$this->notify->setData( json_encode(array('item' => 'value')) );
-		
-		// в случае синхронного запроса, на этот адрес произойдет редирект из php,
-		// в случае асинхронного будет сменен window.location
-			$this->notify->setComeback( site_url() );
-		
-		// этот метод завершит дальнейшее выполнение скрипта
-			$this->notify->returnNotify();
-	}
-	
---------------------------------------
-	
-Codeigniter-apns
-(c) 2012, Anton Gorodezkiy
-
-This is codeigniter library to work with Apple Push Notifications Service
-It based on APNS Copyright (c) 2010 Benjamin Ortuzar Seconde <bortuzar@gmail.com>
-
-Basic usage for pushing (controller):
-
-	function send_notifications()
-	{
-		$this->load->library('apn');
-		$this->apn->payloadMethod = 'enhance'; // you can turn on this method for debuggin purpose
-		$this->apn->connectToPush();
-		
-		$send_result = $this->apn->sendMessage($device_token, 'Test notif #1 (TIME:'.date('H:i:s').')', /*badge*/ 2, /*sound*/ 'default'  );
-			
-		if($send_result)
-			log_message('debug','Sending successful');
+		if ($result)
+		{
+			$this->notify->error('Часть данных не сохранена');
+			$this->notify->setData( json_encode(array('sum_count' => 4)) );
+			$this->notify->returnSuccess('Функция отработала');
+		}
 		else
-			log_message('error',$this->apn->error);
-	
-		
-		$this->apn->disconnectPush();
+			$this->notify->returnError('Случилась какая-то ошибка');
 	}
+	
+	
+Пример использования в js:
+	$.post(url,form_data,function(data)
+	{
+		var json = $.parseJSON(data);
+		
+		if (notifyIsSuccess(json))
+		{
+			$(".sum").text(json.data.sum_count);
+			notifySuccess('Запись суммы прошла успешно');
+		}
+		
+		notify(json); // выведет очередь сообщений, если таковые есть
+		
+	});
+	
