@@ -367,7 +367,10 @@ class Notify
 					$this->returnTo = base_url();
 			}
 			
-			$this->ci_session->add_userdata('notify',$json);
+		
+			$data = $this->ci_session->userdata('notify');
+			$data[] = $value;
+			$this->ci_session->set_userdata($name,$data);
 
 			redirect($this->returnTo);
 			
