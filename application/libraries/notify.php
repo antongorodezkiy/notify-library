@@ -1,22 +1,23 @@
 <?php
 /**
-* Notify – класс уведомлений пользователя для Codeigniter
+* Notify вЂ“ РєР»Р°СЃСЃ СѓРІРµРґРѕРјР»РµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ Codeigniter
 *
-* Пример применения в php:
+* РџСЂРёРјРµСЂ РїСЂРёРјРµРЅРµРЅРёСЏ РІ php:
 *
-* Вывод одной ошибки или сообщения
-* $this->notify->returnError('Текст ошибки');
+* Р’С‹РІРѕРґ РѕРґРЅРѕР№ РѕС€РёР±РєРё РёР»Рё СЃРѕРѕР±С‰РµРЅРёСЏ
+* $this->notify->returnError('РўРµРєСЃС‚ РѕС€РёР±РєРё');
 *
-* Вывод нескольких сообщений
-* $this->notify->error('Случилась какая-то ошибка');
-* $this->notify->success('Но основную часть мы выполнили');
+* Р’С‹РІРѕРґ РЅРµСЃРєРѕР»СЊРєРёС… СЃРѕРѕР±С‰РµРЅРёР№
+* $this->notify->error('РЎР»СѓС‡РёР»Р°СЃСЊ РєР°РєР°СЏ-С‚Рѕ РѕС€РёР±РєР°');
+* $this->notify->success('РќРѕ РѕСЃРЅРѕРІРЅСѓСЋ С‡Р°СЃС‚СЊ РјС‹ РІС‹РїРѕР»РЅРёР»Рё');
 * $this->notify->returnNotify();
 *
 * @package codeigniter-notify-library
 * @author Eduardo Kozachek <eduard.kozachek@gmail.com>
-* @version $Revision: 1 $
+* @version $Revision: 1.01 $
 * @access public
 * @see http://nadvoe.org.ua
+* @changed 13.03.12 16:46
 */
 
 class Notify
@@ -39,6 +40,7 @@ class Notify
 			position:fixed;
 			top:20px;
 			right:20px;
+			z-index: 50;
 		}
 		
 		.notice{
@@ -179,6 +181,15 @@ class Notify
 				}
 					
 				$(".notice",".notify").click(function(){ $(this).fadeOut(300); });
+
+			}
+			
+			function notifyIsSuccess(json)
+			{
+				if (json != undefined && json[0] != undefined && !json[0].isError)
+					return true;
+				else
+					return false;
 			}
 			
 			function notifyError(message)
@@ -210,7 +221,7 @@ class Notify
 				{
 					var notice_time = $(this).attr("time");
 					
-					if ( (now-notice_time) > 2500 )
+					if ( (now-notice_time) > {timeout} )
 						$(this).fadeOut(800);
 					else
 						$(this).attr("time",now);
@@ -223,7 +234,7 @@ class Notify
 			{
 				$(".notice",".notify").live("click",function(){ $(this).fadeOut(300); });
 				
-				setInterval("close_old_notifies()",2500);
+				setInterval("close_old_notifies()",{timeout});
 				
 				$(".notice",".notify").hover(function()
 				{
@@ -240,32 +251,35 @@ class Notify
 	
 	
 	/**
-	* Конструктор сохраняет сессию внутри этого класса и выставляет флаги запроса
+	* РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ СЃРѕС…СЂР°РЅСЏРµС‚ СЃРµСЃСЃРёСЋ РІРЅСѓС‚СЂРё СЌС‚РѕРіРѕ РєР»Р°СЃСЃР° Рё РІС‹СЃС‚Р°РІР»СЏРµС‚ С„Р»Р°РіРё Р·Р°РїСЂРѕСЃР°
 	*
 	* @access public
 	*/
 	function __construct()
 	{
-		// загружаем Codeigniter
+		// Р·Р°РіСЂСѓР¶Р°РµРј Codeigniter
         $this->_ci =& get_instance();
 		
-		// загружаем сессию
+		// Р·Р°РіСЂСѓР¶Р°РµРј СЃРµСЃСЃРёСЋ
 		$this->ci_session = $this->_ci->session;
 		
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 			$this->isPosted = true;
 		else
 			$this->isPosted = false;
-
+		
+		$this->_ci->config->load('notify',true);
+		$fadeTimeout = $this->_ci->config->item('fade_timeout','notify');
+		$this->js = str_replace(array('{timeout}'),array($fadeTimeout),$this->js);
 	}
 	
 	
 	/**
-	* Функция выводящая сохраненные в библиотеке стили и javascript
-	* Ее подключение обязательно
+	* Р¤СѓРЅРєС†РёСЏ РІС‹РІРѕРґСЏС‰Р°СЏ СЃРѕС…СЂР°РЅРµРЅРЅС‹Рµ РІ Р±РёР±Р»РёРѕС‚РµРєРµ СЃС‚РёР»Рё Рё javascript
+	* Р•Рµ РїРѕРґРєР»СЋС‡РµРЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ
 	*
-	* @global string $this->css - стили
-	* @global string $this->js - скрипты
+	* @global string $this->css - СЃС‚РёР»Рё
+	* @global string $this->js - СЃРєСЂРёРїС‚С‹
 	* @return string HTML
 	* @access public
 	*/
@@ -308,19 +322,19 @@ class Notify
 		}
 	
 	/**
-	* Основная функция возврата
-	* На ней выполнение скрипта завершается
+	* РћСЃРЅРѕРІРЅР°СЏ С„СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‚Р°
+	* РќР° РЅРµР№ РІС‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р° Р·Р°РІРµСЂС€Р°РµС‚СЃСЏ
 	*
-	* @param string $json двумерный массив с типом сообщения и текстом
-	* @global string $_SERVER['HTTP_REFERER'] | $this->returnTo - адрес предыдущей страницы
-	* @uses Session Сессии codeigniter
-	* @uses base_url() Функция возвращающая корневую директорию
-	* @uses site_url() Функция преобразования путей приложения
-	* @return array Сохраняет массив сообщений в сессию
-	* @return json Выдает json-массив в javascript
+	* @param string $json РґРІСѓРјРµСЂРЅС‹Р№ РјР°СЃСЃРёРІ СЃ С‚РёРїРѕРј СЃРѕРѕР±С‰РµРЅРёСЏ Рё С‚РµРєСЃС‚РѕРј
+	* @global string $_SERVER['HTTP_REFERER'] | $this->returnTo - Р°РґСЂРµСЃ РїСЂРµРґС‹РґСѓС‰РµР№ СЃС‚СЂР°РЅРёС†С‹
+	* @uses Session РЎРµСЃСЃРёРё codeigniter
+	* @uses base_url() Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°СЋС‰Р°СЏ РєРѕСЂРЅРµРІСѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ
+	* @uses site_url() Р¤СѓРЅРєС†РёСЏ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ РїСѓС‚РµР№ РїСЂРёР»РѕР¶РµРЅРёСЏ
+	* @return array РЎРѕС…СЂР°РЅСЏРµС‚ РјР°СЃСЃРёРІ СЃРѕРѕР±С‰РµРЅРёР№ РІ СЃРµСЃСЃРёСЋ
+	* @return json Р’С‹РґР°РµС‚ json-РјР°СЃСЃРёРІ РІ javascript
 	* @access public
 	*/
-	public function returnNotify($json='')
+	public function returnNotify()
 	{
 		if ($this->returnTo != '')
 		{
@@ -332,26 +346,27 @@ class Notify
 				$this->returnTo = site_url($this->returnTo);
 		}
 		
-		if ($json=='')
-			$json = $this->notify;
+		$json = $this->notify;
 		
 		$json['data'] = $this->additionalData;
-		$json['comeback'] = $this->returnTo;
+		
 		
 		if ($this->_ci->input->is_ajax_request())
 		{
+			$json['comeback'] = $this->returnTo;
 			$json = json_encode($json);
 			die($json);
 		}
 		else
 		{
-			if ($this->returnTo == '' && isset($_SERVER['HTTP_REFERER']))
+			if ($this->returnTo == '')
 			{
-				$this->returnTo = $_SERVER['HTTP_REFERER'];
+				if (isset($_SERVER['HTTP_REFERER']))
+					$this->returnTo = $_SERVER['HTTP_REFERER'];
+				else
+					$this->returnTo = base_url();
 			}
-			else
-				$this->returnTo = base_url();
-
+			
 			$this->ci_session->add_userdata('notify',$json);
 
 			redirect($this->returnTo);
@@ -363,62 +378,60 @@ class Notify
 	
 	
 	/**
-	* Добавление ошибки в очередь
+	* Р”РѕР±Р°РІР»РµРЅРёРµ РѕС€РёР±РєРё РІ РѕС‡РµСЂРµРґСЊ
 	*
-	* @param string $message - Текст сообщения
-	* @global string $this->notify - очередь сообщений
+	* @param string $message - РўРµРєСЃС‚ СЃРѕРѕР±С‰РµРЅРёСЏ
+	* @global string $this->notify - РѕС‡РµСЂРµРґСЊ СЃРѕРѕР±С‰РµРЅРёР№
 	* @access public
 	*/
 	public function error($message)
 	{
-		$this->notify[] = array("type"=>"error","message"=>$message);
+		$this->notify[] = array("isError"=>1,"type"=>"error","message"=>$message);
 	}
 	
 	/**
-	* Добавление сообщения в очередь
+	* Р”РѕР±Р°РІР»РµРЅРёРµ СЃРѕРѕР±С‰РµРЅРёСЏ РІ РѕС‡РµСЂРµРґСЊ
 	*
-	* @param string $message - Текст сообщения
-	* @global string $this->notify - очередь сообщений
+	* @param string $message - РўРµРєСЃС‚ СЃРѕРѕР±С‰РµРЅРёСЏ
+	* @global string $this->notify - РѕС‡РµСЂРµРґСЊ СЃРѕРѕР±С‰РµРЅРёР№
 	* @access public
 	*/
 	public function success($message)
 	{
-		$this->notify[] = array("type"=>"success","message"=>$message);
+		$this->notify[] = array("isError"=>0,"type"=>"success","message"=>$message);
 	}
 	
 	/**
-	* Добавление сообщения в очередь и прекращение выполнение скрипта
+	* Р”РѕР±Р°РІР»РµРЅРёРµ СЃРѕРѕР±С‰РµРЅРёСЏ РІ РѕС‡РµСЂРµРґСЊ Рё РїСЂРµРєСЂР°С‰РµРЅРёРµ РІС‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р°
 	*
-	* @param string $message - Текст сообщения
-	* @global string $this->notify - очередь сообщений
+	* @param string $message - РўРµРєСЃС‚ СЃРѕРѕР±С‰РµРЅРёСЏ
 	* @access public
 	*/
 	public function returnError($message)
 	{
-		$json = array(array("isError"=>1,"type"=>"error","message"=>$message));
+		$this->error($message);
 		
-		$this->returnNotify($json);
+		$this->returnNotify();
 	}
 	
 	/**
-	* Добавление сообщения в очередь и прекращение выполнение скрипта
+	* Р”РѕР±Р°РІР»РµРЅРёРµ СЃРѕРѕР±С‰РµРЅРёСЏ РІ РѕС‡РµСЂРµРґСЊ Рё РїСЂРµРєСЂР°С‰РµРЅРёРµ РІС‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р°
 	*
-	* @param string $message - Текст сообщения
-	* @global string $this->notify - очередь сообщений
+	* @param string $message - РўРµРєСЃС‚ СЃРѕРѕР±С‰РµРЅРёСЏ
 	* @access public
 	*/
 	public function returnSuccess($message)
 	{
-		$json = array(array("isError"=>0,"type"=>"success","message"=>$message));
+		$this->success($message);
 		
-		$this->returnNotify($json);
+		$this->returnNotify();
 	}
 
 	/**
-	* Добавление данных в ответ
+	* Р”РѕР±Р°РІР»РµРЅРёРµ РґР°РЅРЅС‹С… РІ РѕС‚РІРµС‚
 	*
-	* @param array $data - Данные
-	* @global string $this->additionalData - данные
+	* @param array $data - Р”Р°РЅРЅС‹Рµ
+	* @global string $this->additionalData - РґР°РЅРЅС‹Рµ
 	* @access public
 	*/
 	public function setData($data)
@@ -427,15 +440,15 @@ class Notify
 	}
 	
 	/**
-	* Получение данных из ответа
+	* РџРѕР»СѓС‡РµРЅРёРµ РґР°РЅРЅС‹С… РёР· РѕС‚РІРµС‚Р°
 	*
-	* @global string $this->additionalData - данные
-	* @global string $this->ci_session - сессия
+	* @global string $this->additionalData - РґР°РЅРЅС‹Рµ
+	* @global string $this->ci_session - СЃРµСЃСЃРёСЏ
 	* @access public
 	*/
 	public function getData()
 	{
-		// уведомления текущего запроса
+		// СѓРІРµРґРѕРјР»РµРЅРёСЏ С‚РµРєСѓС‰РµРіРѕ Р·Р°РїСЂРѕСЃР°
 		if (isset($this->additionalData))
 			$additionalData = $this->additionalData;
 		else
@@ -450,13 +463,13 @@ class Notify
 				$additionalData = '';
 		}
 			
-		// уведомления предыдущего запроса
+		// СѓРІРµРґРѕРјР»РµРЅРёСЏ РїСЂРµРґС‹РґСѓС‰РµРіРѕ Р·Р°РїСЂРѕСЃР°
 		
 		return $additionalData;
 	}
 	
 	/**
-	* Установка адреса перенаправления
+	* РЈСЃС‚Р°РЅРѕРІРєР° Р°РґСЂРµСЃР° РїРµСЂРµРЅР°РїСЂР°РІР»РµРЅРёСЏ
 	*
 	* @param string $url - URL
 	* @global string $this->returnTo - URL
@@ -468,28 +481,28 @@ class Notify
 	}
 	
 	/**
-	* Вывод и очистка очереди сообщений
+	* Р’С‹РІРѕРґ Рё РѕС‡РёСЃС‚РєР° РѕС‡РµСЂРµРґРё СЃРѕРѕР±С‰РµРЅРёР№
 	*
-	* @global string $this->notify - Очередь сообщений
+	* @global string $this->notify - РћС‡РµСЂРµРґСЊ СЃРѕРѕР±С‰РµРЅРёР№
 	* @uses Session CI_Session
 	* @access public
 	*/
 	public function getMessages()
 	{
 
-		// уведомления текущего запроса
+		// СѓРІРµРґРѕРјР»РµРЅРёСЏ С‚РµРєСѓС‰РµРіРѕ Р·Р°РїСЂРѕСЃР°
 		if (isset($this->notify) && is_array($this->notify) && count($this->notify))
 			$notifies = $this->notify;
 		else
 			$notifies = array();
 			
-		// уведомления предыдущего запроса
+		// СѓРІРµРґРѕРјР»РµРЅРёСЏ РїСЂРµРґС‹РґСѓС‰РµРіРѕ Р·Р°РїСЂРѕСЃР°
 		$sess = $this->ci_session->userdata('notify');
 		
 		if (isset($sess) && is_array($sess) && count($sess))
 			$notifies = array_merge($notifies,$sess);
 		
-		// вывод
+		// РІС‹РІРѕРґ
 		$html = '';
 		if (isset($notifies) && is_array($notifies) && count($notifies))
 		{
