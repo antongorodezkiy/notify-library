@@ -29,7 +29,7 @@ class Notify
 	
 	* @access private
 	*/
-	private $notify, $returnTo, $ci_session, $additionalData;
+	private $notify, $returnTo, $ci_session, $additionalData, $mustDie = true, $returnResult;
 	
 	private $css = "
 	
@@ -263,11 +263,6 @@ class Notify
 		// загружаем сессию
 		$this->ci_session = $this->_ci->session;
 		
-		if ($_SERVER['REQUEST_METHOD'] == 'POST')
-			$this->isPosted = true;
-		else
-			$this->isPosted = false;
-		
 		$this->_ci->config->load('notify',true);
 		$fadeTimeout = $this->_ci->config->item('fade_timeout','notify');
 		$this->js = str_replace(array('{timeout}'),array($fadeTimeout),$this->js);
@@ -369,13 +364,22 @@ class Notify
 			
 		
 			$data = $this->ci_session->userdata('notify');
-			$data[] = $value;
-			$this->ci_session->set_userdata($name,$data);
-
-			redirect($this->returnTo);
 			
-			$this->returnTo = '';
-			die();
+			if (is_array())
+			{
+				$json = array_merge($data,$json);
+			}
+			
+			$this->ci_session->set_userdata('notify',$json);
+
+			if ($this->mustDie)
+			{
+				redirect($this->returnTo);
+				$this->returnTo = '';
+				die();
+			}
+			else
+				return $this->returnResult OR false;
 		}
 	}
 	
@@ -414,7 +418,9 @@ class Notify
 	{
 		$this->error($message);
 		
-		$this->returnNotify();
+		$this->returnResult = false;
+		
+		return $this->returnNotify();
 	}
 	
 	/**
@@ -427,7 +433,9 @@ class Notify
 	{
 		$this->success($message);
 		
-		$this->returnNotify();
+		$this->returnResult = true;
+		
+		return $this->returnNotify();
 	}
 
 	/**
@@ -542,6 +550,17 @@ class Notify
 		return '<div class="notify">'.$html.'</div>';
 	}
 	
+	
+	/**
+	* Метод для предотвращения прекращения выполнения скрипта 
+	*
+	* @param bool $mustDie - Включение/выключение прерывания скрипта
+	* @access public
+	*/
+	public function mustDie($mustDie = true)
+	{
+		$this->mustDie = (bool)$mustDie;
+	}
 	
 	
 }
