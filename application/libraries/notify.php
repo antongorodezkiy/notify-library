@@ -365,7 +365,7 @@ class Notify
 		
 			$data = $this->ci_session->userdata('notify');
 			
-			if (is_array())
+			if ($data && is_array($data))
 			{
 				$json = array_merge($data,$json);
 			}
