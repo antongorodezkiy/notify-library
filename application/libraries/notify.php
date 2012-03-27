@@ -369,6 +369,8 @@ class Notify
 			{
 				$json = array_merge($data,$json);
 			}
+			else
+				$json = $data;
 			
 			$this->ci_session->set_userdata('notify',$json);
 
