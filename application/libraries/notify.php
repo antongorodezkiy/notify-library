@@ -14,27 +14,29 @@
 *
 * @package codeigniter-notify-library
 * @author Eduardo Kozachek <eduard.kozachek@gmail.com>
-* @version $Revision: 1.01 $
+* @version $Revision: 1.03 $
 * @access public
 * @see http://nadvoe.org.ua
-* @changed 13.03.12 16:46
+* @changed 25.05.12 19:21
 */
 
 class Notify
 {
-	/**
-	* returns the sample data
-	*
-	* @param string $sample the sample data
-	
-	* @access private
-	*/
-	private $notify, $returnTo, $ci_session, $additionalData;
+
+	private $notify,
+		$returnTo,
+		$ci_session,
+		$additionalData,
+		$mustDie = true,
+		$returnResult,
+		$region = 'default',
+		$ttl = 5,
+		$silent;
 	
 	private $css = "
 	
 		/** Notification **/
-		.notify
+		.notify.default
 		{
 			display:block;
 			position:fixed;
@@ -43,7 +45,7 @@ class Notify
 			z-index: 50;
 		}
 		
-		.notice{
+		.notify.default .notice{
 		  position: relative;
 		  padding: 15px 15px;
 		  margin-bottom: 18px;
@@ -72,12 +74,12 @@ class Notify
 		  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 		}
 		
-		.notice
+		.notify.default .notice
 		{
 			margin-bottom: 10px;
 		}
 		
-		.notice .close
+		.notify.default .notice .close
 		{
 			font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 			float: right;
@@ -93,7 +95,7 @@ class Notify
 			text-decoration: none;
 		}
 		
-		.notice .close:hover
+		.notify.default .notice .close:hover
 		{
 		  color: #000000;
 		  text-decoration: none;
@@ -103,62 +105,63 @@ class Notify
 		  opacity: 0.4;
 		}
 
-		.notice strong
+		.notify.default .notice strong
 		{
 			font-weight: bold;
 			color:inherit;
 		}
 		
-		.notice.success{
-		  background-color: #57a957;
-		  background-repeat: repeat-x;
-		  background-image: -khtml-gradient(linear, left top, left bottom, from(#62c462), to(#57a957));
-		  background-image: -moz-linear-gradient(top, #62c462, #57a957);
-		  background-image: -ms-linear-gradient(top, #62c462, #57a957);
-		  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #62c462), color-stop(100%, #57a957));
-		  background-image: -webkit-linear-gradient(top, #62c462, #57a957);
-		  background-image: -o-linear-gradient(top, #62c462, #57a957);
-		  background-image: linear-gradient(top, #62c462, #57a957);
-		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#62c462', endColorstr='#57a957', GradientType=0);
-		  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
-		  border-color: #57a957 #57a957 #3d773d;
-		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
-		  color:#FFF;
-		}
-		.notice.error
-		{
-		  background-color: #c43c35;
-		  background-repeat: repeat-x;
-		  background-image: -khtml-gradient(linear, left top, left bottom, from(#ee5f5b), to(#c43c35));
-		  background-image: -moz-linear-gradient(top, #ee5f5b, #c43c35);
-		  background-image: -ms-linear-gradient(top, #ee5f5b, #c43c35);
-		  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ee5f5b), color-stop(100%, #c43c35));
-		  background-image: -webkit-linear-gradient(top, #ee5f5b, #c43c35);
-		  background-image: -o-linear-gradient(top, #ee5f5b, #c43c35);
-		  background-image: linear-gradient(top, #ee5f5b, #c43c35);
-		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ee5f5b', endColorstr='#c43c35', GradientType=0);
-		  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
-		  border-color: #c43c35 #c43c35 #882a25;
-		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
-		  color: #FFF!important;
+		.notify.default .notice.success{
+			background-color: #57a957;
+			background-repeat: repeat-x;
+			background-image: -khtml-gradient(linear, left top, left bottom, from(#62c462), to(#57a957));
+			background-image: -moz-linear-gradient(top, #62c462, #57a957);
+			background-image: -ms-linear-gradient(top, #62c462, #57a957);
+			background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #62c462), color-stop(100%, #57a957));
+			background-image: -webkit-linear-gradient(top, #62c462, #57a957);
+			background-image: -o-linear-gradient(top, #62c462, #57a957);
+			background-image: linear-gradient(top, #62c462, #57a957);
+			filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#62c462', endColorstr='#57a957', GradientType=0);
+			text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+			border-color: #57a957 #57a957 #3d773d;
+			border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+			color:#FFF;
 		}
 		
-		.notice.info
+		.notify.default .notice.error
 		{
-		  background-color: #339bb9;
-		  background-repeat: repeat-x;
-		  background-image: -khtml-gradient(linear, left top, left bottom, from(#5bc0de), to(#339bb9));
-		  background-image: -moz-linear-gradient(top, #5bc0de, #339bb9);
-		  background-image: -ms-linear-gradient(top, #5bc0de, #339bb9);
-		  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #5bc0de), color-stop(100%, #339bb9));
-		  background-image: -webkit-linear-gradient(top, #5bc0de, #339bb9);
-		  background-image: -o-linear-gradient(top, #5bc0de, #339bb9);
-		  background-image: linear-gradient(top, #5bc0de, #339bb9);
-		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#5bc0de', endColorstr='#339bb9', GradientType=0);
-		  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
-		  border-color: #339bb9 #339bb9 #22697d;
-		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
-		  color:#FFF;
+			background-color: #c43c35;
+			background-repeat: repeat-x;
+			background-image: -khtml-gradient(linear, left top, left bottom, from(#ee5f5b), to(#c43c35));
+			background-image: -moz-linear-gradient(top, #ee5f5b, #c43c35);
+			background-image: -ms-linear-gradient(top, #ee5f5b, #c43c35);
+			background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ee5f5b), color-stop(100%, #c43c35));
+			background-image: -webkit-linear-gradient(top, #ee5f5b, #c43c35);
+			background-image: -o-linear-gradient(top, #ee5f5b, #c43c35);
+			background-image: linear-gradient(top, #ee5f5b, #c43c35);
+			filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ee5f5b', endColorstr='#c43c35', GradientType=0);
+			text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+			border-color: #c43c35 #c43c35 #882a25;
+			border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+			color: #FFF!important;
+		}
+		
+		.notify.default .notice.info
+		{
+			background-color: #339bb9;
+			background-repeat: repeat-x;
+			background-image: -khtml-gradient(linear, left top, left bottom, from(#5bc0de), to(#339bb9));
+			background-image: -moz-linear-gradient(top, #5bc0de, #339bb9);
+			background-image: -ms-linear-gradient(top, #5bc0de, #339bb9);
+			background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #5bc0de), color-stop(100%, #339bb9));
+			background-image: -webkit-linear-gradient(top, #5bc0de, #339bb9);
+			background-image: -o-linear-gradient(top, #5bc0de, #339bb9);
+			background-image: linear-gradient(top, #5bc0de, #339bb9);
+			filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#5bc0de', endColorstr='#339bb9', GradientType=0);
+			text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+			border-color: #339bb9 #339bb9 #22697d;
+			border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+			color:#FFF;
 		}
 	
 	";
@@ -167,15 +170,31 @@ class Notify
 	
 	private $js = '
 		
-			function notify(json)
+			function notify(json, globalTtl, globalRegion)
 			{
 				var now = new Date();
 				now = now.getTime();
 				for (key in json)
 				{
+					
 					if ( key != "data" && key != "comeback" )
-						$(".notify").prepend("<div time=\""+now+"\" class=\"notice "+json[key].type+"\"><p>"+json[key].message+"</p></div>");
+					{
+						if (typeof globalRegion != "undefined" && globalRegion != null)
+							var region = globalRegion;
+						else if (json[key].region == null || json[key].region == "default")
+							var region = "default";
+						else
+							var region = json[key].region;
 						
+						if (typeof globalTtl != "undefined" && globalTtl != null)
+							var ttl = globalTtl*1000;
+						else
+							var ttl = json[key].ttl*1000;
+							
+							
+						$(".notify."+region).prepend("<div data-ttl=\""+ttl+"\" class=\"notice "+json[key].type+"\"><p>"+json[key].message+"</p></div>");
+					}
+					
 					if ( key == "comeback" && json["comeback"] != null && json["comeback"] != "" )
 						window.location = json["comeback"];
 				}
@@ -192,24 +211,34 @@ class Notify
 					return false;
 			}
 			
-			function notifyError(message)
+			function notifyError(message, ttl, region)
 			{
 				var json = [{
 					"isError" : 1,
 					"type" : "error",
-					"message" : message
+					"message" : message,
+					"region"	: region,
+					"ttl"		: ttl
 				}];
 				notify(json);
 			}
 			
-			function notifySuccess(message)
+			function notifySuccess(message, ttl, region)
 			{
 				var json = [{
-					"isError" : 0,
-					"type" : "success",
-					"message" : message
+					"isError" 	: 0,
+					"type" 		: "success",
+					"message" 	: message,
+					"region"	: region,
+					"ttl"		: ttl
 				}];
 				notify(json);
+			}
+			
+			var notifyRegion;
+			function notifySetRegion(region)
+			{
+				notifyRegion = region;
 			}
 			
 			function close_old_notifies()
@@ -217,16 +246,25 @@ class Notify
 			
 				var now = new Date();
 				now = now.getTime();
-				$(".notify").children().each(function()
+				if ($(".notify > div:visible").size())
 				{
-					var notice_time = $(this).attr("time");
-					
-					if ( (now-notice_time) > {timeout} )
-						$(this).fadeOut(800);
-					else
-						$(this).attr("time",now);
-				});
+					$(".notify > div:visible").each(function()
+					{
+						if (!$(this).attr("data-time"))
+						{
+							$(this).attr("data-time",now);
+						}
+							
+						var notice_time = $(this).attr("data-time");
+						var notice_ttl = $(this).attr("data-ttl");
+		
+						if (notice_ttl != 0 && (now-notice_time) > notice_ttl )
+							$(this).fadeOut(800);
+
+					});
+				}
 			}
+			
 			
 			
 			
@@ -234,16 +272,16 @@ class Notify
 			{
 				$(".notice",".notify").live("click",function(){ $(this).fadeOut(300); });
 				
-				setInterval("close_old_notifies()",{timeout});
+				setInterval("close_old_notifies()",500);
 				
-				$(".notice",".notify").hover(function()
+				/*$(".notice",".notify").hover(function()
 				{
 					$(this).css("opacity","1");
 				},
 				function()
 				{
 					$(this).css("opacity","0.5");
-				});
+				});*/
 			});
 	
 	';
@@ -263,14 +301,8 @@ class Notify
 		// загружаем сессию
 		$this->ci_session = $this->_ci->session;
 		
-		if ($_SERVER['REQUEST_METHOD'] == 'POST')
-			$this->isPosted = true;
-		else
-			$this->isPosted = false;
-		
 		$this->_ci->config->load('notify',true);
-		$fadeTimeout = $this->_ci->config->item('fade_timeout','notify');
-		$this->js = str_replace(array('{timeout}'),array($fadeTimeout),$this->js);
+		$this->ttl = $this->_ci->config->item('fade_timeout','notify');
 	}
 	
 	
@@ -350,7 +382,6 @@ class Notify
 		
 		$json['data'] = $this->additionalData;
 		
-		
 		if ($this->_ci->input->is_ajax_request())
 		{
 			$json['comeback'] = $this->returnTo;
@@ -369,13 +400,22 @@ class Notify
 			
 		
 			$data = $this->ci_session->userdata('notify');
-			$data[] = $value;
-			$this->ci_session->set_userdata($name,$data);
-
-			redirect($this->returnTo);
 			
-			$this->returnTo = '';
-			die();
+			if ($data && is_array($data))
+			{
+				$json = array_merge($data,$json);
+			}
+			
+			$this->ci_session->set_userdata('notify',$json);
+
+			if ($this->mustDie)
+			{
+				redirect($this->returnTo);
+				$this->returnTo = '';
+				die();
+			}
+			else
+				return $this->returnResult OR false;
 		}
 	}
 	
@@ -384,50 +424,80 @@ class Notify
 	* Добавление ошибки в очередь
 	*
 	* @param string $message - Текст сообщения
+	* @param string $ttl - Время жизни, 0 - неограничено
+	* @param string $region - Регион для вывода сообщения
 	* @global string $this->notify - очередь сообщений
 	* @access public
 	*/
-	public function error($message)
+	public function error($message, $ttl = null, $region = null)
 	{
-		$this->notify[] = array("isError"=>1,"type"=>"error","message"=>$message);
+		if (!$this->silent)
+		{
+			$this->notify[] = array(
+				"isError"	=> 1,
+				"type"		=> "error",
+				"message"	=> $message,
+				"region" 	=> !is_null($region) ? $region : $this->region,
+				"ttl" 		=> !is_null($ttl) ? $ttl : $this->ttl
+			);
+		}
 	}
 	
 	/**
 	* Добавление сообщения в очередь
 	*
 	* @param string $message - Текст сообщения
+	* @param string $ttl - Время жизни, 0 - неограничено
+	* @param string $region - Регион для вывода сообщения
 	* @global string $this->notify - очередь сообщений
 	* @access public
 	*/
-	public function success($message)
+	public function success($message, $ttl = null, $region = null)
 	{
-		$this->notify[] = array("isError"=>0,"type"=>"success","message"=>$message);
+		if (!$this->silent)
+		{
+			$this->notify[] = array(
+				"isError"	=> 0,
+				"type"		=> "success",
+				"message"	=> $message,
+				"region" 	=> !is_null($region) ? $region : $this->region,
+				"ttl" 		=> !is_null($ttl) ? $ttl : $this->ttl
+			);
+		}
 	}
 	
 	/**
 	* Добавление сообщения в очередь и прекращение выполнение скрипта
 	*
 	* @param string $message - Текст сообщения
+	* @param string $ttl - Время жизни, 0 - неограничено
+	* @param string $region - Регион для вывода сообщения
 	* @access public
 	*/
-	public function returnError($message)
+	public function returnError($message, $ttl = null, $region = null)
 	{
-		$this->error($message);
+		$this->error($message, $ttl, $region);
 		
-		$this->returnNotify();
+		$this->returnResult = false;
+		
+		return $this->returnNotify();
 	}
 	
 	/**
 	* Добавление сообщения в очередь и прекращение выполнение скрипта
 	*
 	* @param string $message - Текст сообщения
+	* @param string $ttl - Время жизни, 0 - неограничено
+	* @param string $region - Регион для вывода сообщения
 	* @access public
 	*/
-	public function returnSuccess($message)
+	public function returnSuccess($message, $ttl = null, $region = null)
 	{
-		$this->success($message);
+		$this->success($message, $ttl, $region);
 		
-		$this->returnNotify();
+		$this->returnResult = true;
+		
+		return $this->returnNotify();
 	}
 
 	/**
@@ -490,7 +560,7 @@ class Notify
 	* @uses Session CI_Session
 	* @access public
 	*/
-	public function getMessages()
+	public function getMessages($region = 'default')
 	{
 
 		// уведомления текущего запроса
@@ -507,6 +577,7 @@ class Notify
 		
 		// вывод
 		$html = '';
+
 		if (isset($notifies) && is_array($notifies) && count($notifies))
 		{
 			foreach($notifies as $field => $n)
@@ -515,33 +586,91 @@ class Notify
 				{
 					foreach($n as $key => $nn)
 					{
-						if (isset($nn['message']) && $nn['message'])
+						if (isset($nn['region']) && $region == $nn['region'] && isset($nn['message']) && $nn['message'])
+						{
 							$html .= '
-							<div time="'.(time()*1000).'" class="notice '.$nn['type'].'">
+							<div ttl="'.$n['ttl'].'" data-ttl="'.($n['ttl']*1000).'" class="notice '.$nn['type'].'">
 							  <p>
 								  '.$nn['message'].'
 							  </p>
 							</div>';
+							
+							unset($notifies[$field]);
+						}
 					}
 				}
 				else
 				{
-					if (isset($n['message']) && $n['message'])
+					if (isset($n['region']) && $region == $n['region'] && isset($n['message']) && $n['message'])
+					{
 						$html .= '
-						<div time="'.(time()*1000).'" class="notice '.$n['type'].'">
+						<div ttl="'.$n['ttl'].'" data-ttl="'.($n['ttl']*1000).'" class="notice '.$n['type'].'">
 							<p>
 								'.$n['message'].'
 							</p>
 						</div>';
+						
+						unset($notifies[$field]);
+					}
 				}
+			
 			}
 		}
 
-		$this->ci_session->unset_userdata('notify');
+		if (!count($notifies))
+			$this->ci_session->unset_userdata('notify');
+		else
+			$this->ci_session->set_userdata('notify',$notifies);
 		
-		return '<div class="notify">'.$html.'</div>';
+		return '<div class="notify '.$region.'">'.$html.'</div>';
 	}
 	
 	
+	/**
+	* Метод для предотвращения прекращения выполнения скрипта 
+	*
+	* @param bool $mustDie - Включение/выключение прерывания скрипта
+	* @access public
+	*/
+	public function mustDie($mustDie = true)
+	{
+		$this->mustDie = (bool)$mustDie;
+	}
+	
+	
+	/**
+	* Метод для предотвращения прекращения выполнения скрипта 
+	*
+	* @param bool $mustDie - Включение/выключение прерывания скрипта
+	* @access public
+	*/
+	public function setSilence($mode = false)
+	{
+		$this->silent = (bool)$mode;
+	}
+	
+	
+	/**
+	* Метод для выбора места в скрипте, где именно выводить сообщения
+	*
+	* @param bool $mustDie - Включение/выключение прерывания скрипта
+	* @access public
+	*/
+	public function setRegion($nameRegion = 'default')
+	{
+		$this->region = $nameRegion;
+	}
+	
+	
+	/**
+	* Метод установки времени жизни сообщения
+	*
+	* @param bool $mustDie - Включение/выключение прерывания скрипта
+	* @access public
+	*/
+	public function seTtl($ttl)
+	{
+		$this->ttl = $ttl;
+	}
 	
 }
