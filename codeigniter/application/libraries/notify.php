@@ -668,7 +668,7 @@ class Notify
 	* @param bool $mustDie - Включение/выключение прерывания скрипта
 	* @access public
 	*/
-	public function seTtl($ttl)
+	public function setTtl($ttl = 5)
 	{
 		$this->ttl = $ttl;
 	}
