@@ -360,7 +360,7 @@ class Notify extends CApplicationComponent
 		{
 			if ($this->returnTo == '/')
 				$this->returnTo = Yii::app()->getBaseUrl(true);
-			elseif(strstr($this->returnTo,'http://'))
+			elseif(stristr($this->returnTo,'http://') or stristr($this->returnTo,'https://'))
 				$this->returnTo = $this->returnTo;
 			else
 				$this->returnTo = Yii::app()->createUrl($this->returnTo);
