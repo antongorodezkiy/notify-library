@@ -1,6 +1,6 @@
 <?php
 /**
-* Notify – класс уведомлений пользователя для Codeigniter
+* Notify – класс уведомлений пользователя
 *
 * Пример применения в php:
 *
@@ -20,16 +20,9 @@
 * @changed 25.05.12 19:21
 */
 
-class Notify extends CApplicationComponent
+class Notify
 {
-	
-	/**
-	* returns the sample data
-	*
-	* @param string $sample the sample data
-	
-	* @access private
-	*/
+
 	private $notify,
 		$returnTo,
 		$additionalData,
@@ -292,7 +285,18 @@ class Notify extends CApplicationComponent
 	
 	';
 	
-
+	
+	
+	/**
+	* Конструктор сохраняет сессию внутри этого класса и выставляет флаги запроса
+	*
+	* @access public
+	*/
+	function __construct($config = array())
+	{
+		$this->ttl = $config['ttl'];
+	}
+	
 	
 	/**
 	* Функция выводящая сохраненные в библиотеке стили и javascript
@@ -341,15 +345,21 @@ class Notify extends CApplicationComponent
 			return $html;
 		}
 	
+	protected function redirect($uri)
+	{
+		header("Location: ".$uri, TRUE, 302);
+		die();
+	}
+	
 	/**
 	* Основная функция возврата
 	* На ней выполнение скрипта завершается
 	*
 	* @param string $json двумерный массив с типом сообщения и текстом
 	* @global string $_SERVER['HTTP_REFERER'] | $this->returnTo - адрес предыдущей страницы
-	* @uses Session
-	* @uses getBaseUrl() Функция возвращающая корневую директорию
-	* @uses createUrl() Функция преобразования путей приложения
+	* @uses Session Сессии codeigniter
+	* @uses base_url() Функция возвращающая корневую директорию
+	* @uses site_url() Функция преобразования путей приложения
 	* @return array Сохраняет массив сообщений в сессию
 	* @return json Выдает json-массив в javascript
 	* @access public
@@ -359,19 +369,18 @@ class Notify extends CApplicationComponent
 		if ($this->returnTo != '')
 		{
 			if ($this->returnTo == '/')
-				$this->returnTo = Yii::app()->getBaseUrl(true);
-			elseif(strstr($this->returnTo,'http://'))
+				$this->returnTo = '/';
+			elseif(strstr($this->returnTo,'http://') or strstr($this->returnTo,'https://'))
 				$this->returnTo = $this->returnTo;
 			else
-				$this->returnTo = Yii::app()->createUrl($this->returnTo);
+				$this->returnTo = $this->returnTo;
 		}
 		
 		$json = $this->notify;
 		
 		$json['data'] = $this->additionalData;
 		
-		
-		if (Yii::app()->request->isAjaxRequest)
+		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
 		{
 			$json['comeback'] = $this->returnTo;
 			$json = json_encode($json);
@@ -384,24 +393,22 @@ class Notify extends CApplicationComponent
 				if (isset($_SERVER['HTTP_REFERER']))
 					$this->returnTo = $_SERVER['HTTP_REFERER'];
 				else
-				{
-					$this->returnTo = Yii::app()->request->getBaseUrl(true);
-				}
+					$this->returnTo = '/';
 			}
 			
 		
-			$data = Yii::app()->session->get('notify');
+			$data = $_SESSION['notify'];
 			
 			if ($data && is_array($data))
 			{
 				$json = array_merge($data,$json);
 			}
 			
-			Yii::app()->session['notify'] = $json;
+			$_SESSION['notify'] = $json;
 
 			if ($this->mustDie)
 			{
-				Yii::app()->request->redirect($this->returnTo);
+				$this->redirect($this->returnTo);
 				$this->returnTo = '';
 				die();
 			}
@@ -507,7 +514,7 @@ class Notify extends CApplicationComponent
 	* Получение данных из ответа
 	*
 	* @global string $this->additionalData - данные
-	* @global string $this->cisession - сессия
+	* @global string $this->ci_session - сессия
 	* @access public
 	*/
 	public function getData()
@@ -517,7 +524,7 @@ class Notify extends CApplicationComponent
 			$additionalData = $this->additionalData;
 		else
 		{
-			$sess = Yii::app()->session->get('notify');
+			$sess = $_SESSION['notify'];
 			
 			if (isset($sess['data']) && $sess['data'])
 			{
@@ -561,14 +568,14 @@ class Notify extends CApplicationComponent
 			$notifies = array();
 			
 		// уведомления предыдущего запроса
-		$sess = Yii::app()->session->get('notify');
+		$sess = $_SESSION['notify'];
 		
 		if (isset($sess) && is_array($sess) && count($sess))
 			$notifies = array_merge($notifies,$sess);
 		
 		// вывод
 		$html = '';
-		
+
 		if (isset($notifies) && is_array($notifies) && count($notifies))
 		{
 			foreach($notifies as $field => $n)
@@ -609,10 +616,10 @@ class Notify extends CApplicationComponent
 		}
 
 		if (!count($notifies))
-			Yii::app()->session->remove('notify');
+			unset($_SESSION['notify']);
 		else
-			Yii::app()->session['notify'] = $notifies;
-
+			$_SESSION['notify'] = $notifies;
+		
 		return '<div class="notify '.$region.'">'.$html.'</div>';
 	}
 	
@@ -659,22 +666,9 @@ class Notify extends CApplicationComponent
 	* @param bool $mustDie - Включение/выключение прерывания скрипта
 	* @access public
 	*/
-	public function seTtl($ttl)
+	public function setTtl($ttl = 5)
 	{
 		$this->ttl = $ttl;
-	}
-	
-	
-	/**
-	* Calls the {@link registerScripts()} method.
-	*/
-	public function init() {
-		
-		Yii::app()->clientScript->registerScript('notify',$this->initJs(),CClientScript::POS_HEAD);
-		
-		Yii::app()->clientScript->registerCss('notify',$this->initCss());
-		
-		parent::init();	
 	}
 	
 }
