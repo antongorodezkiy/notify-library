@@ -372,7 +372,7 @@ class Notify
 		{
 			if ($this->returnTo == '/')
 				$this->returnTo = base_url();
-			elseif(strstr($this->returnTo,'http://'))
+			elseif(strstr($this->returnTo,'http://') or strstr($this->returnTo,'https://'))
 				$this->returnTo = $this->returnTo;
 			else
 				$this->returnTo = site_url($this->returnTo);
@@ -668,7 +668,7 @@ class Notify
 	* @param bool $mustDie - Включение/выключение прерывания скрипта
 	* @access public
 	*/
-	public function seTtl($ttl)
+	public function setTtl($ttl = 5)
 	{
 		$this->ttl = $ttl;
 	}
